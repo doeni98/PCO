@@ -2,7 +2,7 @@
 #include <QCryptographicHash>
 #include <QVector>
 #include <QDebug>
-
+//Hello world
 void doHackingTR(QString charset,
                  QString salt,
                  QString hash,
