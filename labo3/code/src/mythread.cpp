@@ -1,8 +1,16 @@
 #include "mythread.h"
+#include "threadmanager.h"
+
 #include <QCryptographicHash>
 #include <QVector>
 #include <QDebug>
-//Hello world
+
+bool testPassword (
+                    const QString& salt,
+                    const QString& hash,
+                    const QString& currentPasswordString,
+                    QCryptographicHash& md5);
+
 void doHackingTR(QString charset,
                  QString salt,
                  QString hash,
@@ -10,8 +18,12 @@ void doHackingTR(QString charset,
                  unsigned int nbThreads,
                  long long unsigned int nbToCompute,
                  QString *resultPassword,
-                 unsigned int idThread){
+                 unsigned int idThread,
+                 ThreadManager *manager) {
+
     unsigned int i;
+    unsigned int indexFirstCharToTest;
+    unsigned int indexFirstCharOfNextThread;
 
 
     long long unsigned int nbComputed;
@@ -25,17 +37,13 @@ void doHackingTR(QString charset,
      * Mot de passe à tester courant
      */
     QString currentPasswordString;
+    QString lastPasswordToTest;
 
     /*
      * Tableau contenant les index dans la chaine charset des caractères de
      * currentPasswordString
      */
     QVector<unsigned int> currentPasswordArray;
-
-    /*
-     * Hash du mot de passe à tester courant
-     */
-    QString currentHash;
 
     /*
      * Object QCryptographicHash servant à générer des md5
@@ -54,34 +62,46 @@ void doHackingTR(QString charset,
      * On initialise le premier mot de passe à tester courant en le remplissant
      * de nbChars fois du premier caractère de charset
      */
+    indexFirstCharToTest = nbValidChars / (int) nbThreads * idThread;
+    indexFirstCharOfNextThread = nbValidChars / (int) nbThreads * (idThread + 1);
+
     currentPasswordString.fill(charset.at(0),nbChars);
     currentPasswordArray.fill(0,nbChars);
+
+    currentPasswordString.replace(nbChars - 1, 1, charset.at(indexFirstCharToTest));
+    currentPasswordArray.replace(nbChars - 1, indexFirstCharToTest);
+
+    lastPasswordToTest.fill(charset.at(nbValidChars - 1), nbChars);
+
+    if (idThread + 1 != nbThreads) {
+
+        lastPasswordToTest.replace(nbChars - 1, 1, charset.at(indexFirstCharOfNextThread - 1));
+    }
 
     /*
      * Tant qu'on a pas tout essayé...
      */
-    while (nbComputed < nbToCompute) {
-        /* On vide les données déjà ajoutées au générateur */
-        md5.reset();
-        /* On préfixe le mot de passe avec le sel */
-        md5.addData(salt.toLatin1());
-        md5.addData(currentPasswordString.toLatin1());
-        /* On calcul le hash */
-        currentHash = md5.result().toHex();
 
-        /*
-         * Si on a trouvé, on retourne le mot de passe courant (sans le sel)
-         */
-        if (currentHash == hash)
+    while (currentPasswordString != lastPasswordToTest) {
+
+        if (*resultPassword != "") {
+            qDebug() << "A thread found password";
+            break;
+        }
+
+        if (testPassword(salt, hash, currentPasswordString, md5)) {
             *resultPassword = currentPasswordString;
+            break;
+        }
 
         /*
          * Tous les 1000 hash calculés, on notifie qui veut bien entendre
          * de l'état de notre avancement (pour la barre de progression)
          */
-        //if ((nbComputed % 1000) == 0) {
-        //    incrementPercentComputed((double)1000/nbToCompute);
-        //} TODO
+        if (nbComputed != 0 && (nbComputed % 1000) == 0) {
+
+            manager->incrementPercentComputed((double)1000/nbToCompute);
+        }
 
         /*
          * On récupère le mot de pass à tester suivant.
@@ -112,6 +132,37 @@ void doHackingTR(QString charset,
             currentPasswordString[i]  = charset.at(currentPasswordArray.at(i));
 
         nbComputed++;
-        qDebug() << "Tr" << idThread << " : "<< currentPasswordString << "\n";
     }
+
+    // Test last password
+
+    if (*resultPassword == "" && testPassword(salt, hash, currentPasswordString, md5)) {
+        *resultPassword = currentPasswordString;
+    }
+    nbComputed++;
+}
+
+bool testPassword (
+                    const QString& salt,
+                    const QString& hash,
+                    const QString& currentPasswordString,
+                    QCryptographicHash& md5) {
+
+    /*
+     * Hash du mot de passe à tester courant
+     */
+    QString currentHash;
+
+    /* On vide les données déjà ajoutées au générateur */
+    md5.reset();
+    /* On préfixe le mot de passe avec le sel */
+    md5.addData(salt.toLatin1());
+    md5.addData(currentPasswordString.toLatin1());
+    /* On calcul le hash */
+    currentHash = md5.result().toHex();
+
+    /*
+     * Si on a trouvé, on retourne le mot de passe courant (sans le sel)
+     */
+    return currentHash == hash;
 }

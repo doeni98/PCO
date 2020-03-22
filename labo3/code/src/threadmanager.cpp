@@ -5,7 +5,7 @@
 #include "mythread.h"
 #include <pcosynchro/pcothread.h>
 
-QString resultPassword = "";
+int compteur = 0;
 
 /*
  * std::pow pour les long long unsigned int
@@ -34,6 +34,7 @@ ThreadManager::ThreadManager(QObject *parent) :
 
 void ThreadManager::incrementPercentComputed(double percentComputed)
 {
+
     emit sig_incrementPercentComputed(percentComputed);
 }
 
@@ -57,6 +58,7 @@ QString ThreadManager::startHacking(
         unsigned int nbThreads)
 {
     long long unsigned int nbToCompute;
+    QString resultPassword = "";
 
     /*
      * Set les variables du .h utilisé par tous les threads.
@@ -76,17 +78,14 @@ QString ThreadManager::startHacking(
                                                  nbThreads,
                                                  nbToCompute,
                                                  &resultPassword,
-                                                 i);
+                                                 i,
+                                                 this);
         threadList.push_back(std::unique_ptr<PcoThread>(currentThread));
     }
 
-    // attande active sur le settage du resultat
-    while(resultPassword == "");
+    for (size_t i = 0; i < threadList.size(); i++) {
+        threadList.at(i)->join();
+    }
     return resultPassword; // pas encore gerer le cas si aucun thread trouve le mdp.
-    /*
-     * Si on arrive ici, cela signifie que tous les mot de passe possibles ont
-     * été testés, et qu'aucun n'est la préimage de ce hash.
-     */
-    return QString("");
 }
 

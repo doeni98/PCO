@@ -1,6 +1,8 @@
 #ifndef MYTHREAD_H
 #define MYTHREAD_H
-#include <QString>>
+
+#include "threadmanager.h"
+#include <QString>
 
 
 
@@ -12,6 +14,7 @@ void doHackingTR(QString charset,
                  unsigned int nbThreads,
                  long long unsigned int nbToCompute,
                  QString *resultPassword,
-                 unsigned int idThread);
+                 unsigned int idThread,
+                 ThreadManager *manager);
 
 #endif // MYTHREAD_H
