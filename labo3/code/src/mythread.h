@@ -1,11 +1,15 @@
+/*
+ * PCO - Laboratoire 3
+ *
+ * Modified by Bourqui Denis & Müller Nicolas on 22.03
+ *
+ */
+
 #ifndef MYTHREAD_H
 #define MYTHREAD_H
 
 #include "threadmanager.h"
 #include <QString>
-
-
-
 
 void doHackingTR(QString charset,
                  QString salt,

@@ -1,11 +1,16 @@
+/*
+ * PCO - Laboratoire 3
+ *
+ * Modified by Bourqui Denis & Müller Nicolas on 22.03
+ *
+ */
+
 #include <QCryptographicHash>
 #include <QVector>
 #include <QDebug>
 #include "threadmanager.h"
 #include "mythread.h"
 #include <pcosynchro/pcothread.h>
-
-int compteur = 0;
 
 /*
  * std::pow pour les long long unsigned int
@@ -58,6 +63,7 @@ QString ThreadManager::startHacking(
         unsigned int nbThreads)
 {
     long long unsigned int nbToCompute;
+
     QString resultPassword = "";
 
     /*
@@ -68,9 +74,9 @@ QString ThreadManager::startHacking(
     nbToCompute        = intPow(charset.length(),nbChars);
     std::vector<std::unique_ptr<PcoThread>> threadList;
 
-    // demarage des threads
-    for (unsigned int i=0; i<nbThreads; i++)
-    {
+    /* demarrage des threads */
+    for (unsigned int i=0; i<nbThreads; i++) {
+
         PcoThread *currentThread = new PcoThread(doHackingTR, charset,
                                                  salt,
                                                  hash,
@@ -80,12 +86,15 @@ QString ThreadManager::startHacking(
                                                  &resultPassword,
                                                  i,
                                                  this);
+
         threadList.push_back(std::unique_ptr<PcoThread>(currentThread));
     }
 
+    /* Jointure des threads */
     for (size_t i = 0; i < threadList.size(); i++) {
         threadList.at(i)->join();
     }
-    return resultPassword; // pas encore gerer le cas si aucun thread trouve le mdp.
+
+    return resultPassword;
 }
 
