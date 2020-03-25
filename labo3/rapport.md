@@ -20,7 +20,57 @@ Pour la barre de progression nous avons pu réutiliser le même code que celui p
 
 ### Tests et résultats
 
-TODO
+###### Test de repartition entre les threads
+Charset:
+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!$~*
+
+avec la longeur du charset de = 66
+on divise la taille du charset par le nombre de thread:
+66 / 3 = 22
+
+le prémier thread fera donc le mot de passe de '..a' à '..v'
+charset[0] = a
+
+le deuxième thread fera donc le mot de passe de '..w' à ..R'
+charset[22] = w
+
+le troisiemme thread fera donc le mot de passe de '..S' à ..\*'
+charset[44] = S
+
+Repartition avec 3 threads (produit à l'éxecution)
+```
+Thread  2  first password  "aaS"  last password  "\*\*\*"
+Thread  1  first password  "aaw"  last password  "\*\*R"
+Thread  0  first password  "aaa"  last password  "\*\*v"
+```
+On voit que les mot de passes à tester sont bien repartie entre les 3 threads.
+
+###### Test de performances
+
+| longeur mdp | nombre threads | temps |
+| ----------- | -------------- | ----- |
+| 1           | 1              | 4ms |
+| 1           | 30             | 13ms |
+| 1           | 66             | 45ms |
+| 2           | 1              | 19ms      |
+| 2           | 2              | 18ms      |
+| 2           | 5              | 16ms      |
+| 2           | 10             | 16ms      |
+| 3           | 1              | 1071ms|
+| 3           | 2              | 611ms |
+| 3           | 5              | 538ms |
+| 3           | 10             | 567ms |
+| 4           | 1              | 27.3s |
+| 4           | 2              | 16.2s |
+| 4           | 5              | 16.2s |
+| 4           | 10             | 17.5s |
+
+Il n'est pas facile de faire des tel tests performances. Les résultats dépendes de la charge du cpu actuel, de la configuration de la machine virtuelle et de la manière de la préamption fonctionne. 
+Malgré cela on peux observer une tendence d'une augmentation de la vitesse si on utilise plusieurs threads. Cela n'est pas valable pour un mot de passe de la longeur 1, car le temps pour créer les threads sont plus important par rapport à au temps de crackage.
+Le temps augmente a nouveau si il y a trop de thread. Le programme peux même crasher si il y en à trop. 
+
+
+Ces tests on été effectué avec un sel.
 
 ### Limites du code
 
