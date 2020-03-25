@@ -109,10 +109,11 @@ void doHackingTR(QString charset,
     lastPasswordToTest.fill(charset.at(nbValidChars - 1), nbChars);
 
     /*
-     * Si le thread n'est pas le dernier, il faut modifier le dernier caractère pour qu'il
-     * corresponde au caractère avant celui du thread suivant
-     *
-     */
+    * Si le thread n'est pas le dernier, il faut modifier le dernier caractère pour qu'il
+    * corresponde au caractère avant celui du thread suivant. Dans le cas du dernier thread,
+    * le mot de passe final a tester ne doit être composé que des derniers caractères du charset.
+    *
+    */
     if (idThread + 1 != nbThreads) {
 
         lastPasswordToTest.replace(nbChars - 1, 1, charset.at(indexFirstCharOfNextThread - 1));
