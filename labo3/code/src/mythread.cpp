@@ -118,12 +118,12 @@ void doHackingTR(QString charset,
         lastPasswordToTest.replace(nbChars - 1, 1, charset.at(indexFirstCharOfNextThread - 1));
     }
 
+    qDebug() << "Thread " << idThread << " first password " << currentPasswordString << " last password " << lastPasswordToTest;
     /*
      * Tant qu'on a pas tout essayé et qu'aucun mot de passe à été trouvé...
      */
 
-    while (currentPasswordString != lastPasswordToTest && *resultPassword != "") {
-
+    while (currentPasswordString != lastPasswordToTest && *resultPassword == "") {
         /*
          * Teste le mot de passe courant
          */
