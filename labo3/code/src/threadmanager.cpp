@@ -74,7 +74,7 @@ QString ThreadManager::startHacking(
     nbToCompute        = intPow(charset.length(),nbChars);
     std::vector<std::unique_ptr<PcoThread>> threadList;
 
-    /* demarrage des threads */
+    /* démarrage des threads */
     for (unsigned int i=0; i<nbThreads; i++) {
 
         PcoThread *currentThread = new PcoThread(doHackingTR, charset,
