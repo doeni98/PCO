@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Prénom Nom, Prénom Nom
+// Auteurs : Denis Bourqui, Nicolas Müller
 
 #include "skierbehavior.h"
 
@@ -17,7 +17,22 @@ int SkierBehavior::nextId = 1;
 
 void SkierBehavior::run()
 {
-    // A vous d'ajouter le comportement du skieur
+    while(cableCar->isInService()) {
+
+        cableCar->waitForCableCar(id);
+
+        // Si pendant l'attente, le télécabine ferme,
+        // le skieur doit rentrer
+        if (cableCar->isInService()) {
+
+            cableCar->goIn(id);
+            cableCar->waitInsideCableCar(id);
+            cableCar->goOut(id);
+
+            goDownTheMountain();
+        }
+
+    }
 }
 
 void SkierBehavior::goDownTheMountain()

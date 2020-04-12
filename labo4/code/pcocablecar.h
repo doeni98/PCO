@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Prénom Nom, Prénom Nom
+// Auteurs : Denis Bourqui, Nicolas Müller
 
 #ifndef PCOCABLECAR_H
 #define PCOCABLECAR_H
@@ -122,6 +122,13 @@ protected:
     bool inService = true;
 
     // A vous d'ajouter les attributs dont vous avez besoin
+
+    unsigned int nbToWait;
+
+    PcoSemaphore mutex;
+    PcoSemaphore waitBeforeCC;
+    PcoSemaphore waitInCC;
+    PcoSemaphore cabinCanMove;
 };
 
 #endif // PCOCABLECAR_H

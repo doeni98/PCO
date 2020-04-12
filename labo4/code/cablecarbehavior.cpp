@@ -3,11 +3,20 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Prénom Nom, Prénom Nom
+// Auteurs : Denis Bourqui, Nicolas Müller
 
 #include "cablecarbehavior.h"
 
 void CableCarBehavior::run()
 {
-    // A vous d'ajouter le comportement du télécabine
+
+    while (cableCar->isInService()) {
+
+        cableCar->loadSkiers();
+        cableCar->goUp();
+
+        cableCar->unloadSkiers();
+        cableCar->goDown();
+
+    }
 }
