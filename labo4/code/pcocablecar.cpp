@@ -14,7 +14,6 @@ constexpr unsigned int MIN_SECONDS_DELAY = 1;
 constexpr unsigned int MAX_SECONDS_DELAY = 5;
 constexpr unsigned int SECOND_IN_MICROSECONDS = 1000000;
 
-// A vous de remplir les méthodes ci-dessous
 
 PcoCableCar::PcoCableCar(const unsigned int capacity) : capacity(capacity), mutex(1), waitBeforeCC(0), waitInCC(0), cabinCanMove(0)
 {
@@ -34,13 +33,15 @@ void PcoCableCar::waitForCableCar(int id)
     nbSkiersWaiting++;
 
     mutex.release();
+
+    // Attends de pouvoir entrer dans la cabine
     waitBeforeCC.acquire();
 
 }
 
 void PcoCableCar::waitInsideCableCar(int id)
 {
-
+    // Attends que la cabine arrive en haut de la montagne
     qDebug() << "Skieur " << id << " attends dans le télécabine";
     waitInCC.acquire();
 
@@ -51,8 +52,8 @@ void PcoCableCar::goIn(int id)
     mutex.acquire();
 
     qDebug() << "Skieur " << id << " entre dans le télécabine";
-    // Tous les skieurs sont entrés dans la cabine
-    if (++nbSkiersInside == nbToWait) {
+    // Tous les skieurs sont entrés dans la cabine, elle peut monter
+    if (++nbSkiersInside == nbSkiersToLoad) {
         cabinCanMove.release();
     }
 
@@ -66,7 +67,7 @@ void PcoCableCar::goOut(int id)
     mutex.acquire();
 
     qDebug() << "Skieur " << id << " sort du télécabine";
-    // Tous les skieurs sont sortis
+    // Tous les skieurs sont sortis, la cabine peut redescendre
     if (--nbSkiersInside == 0) {
         cabinCanMove.release();
     }
@@ -84,9 +85,14 @@ void PcoCableCar::endService()
 {
     inService = false;
 
+    // Relache les skieurs qui attendent devant la cabine pour
+    // que les threads se stoppent correctement et qu'ils ne
+    // restent pas bloqués dans de l'attente infinie
+
     mutex.acquire();
     unsigned nbToFree = nbSkiersWaiting;
     mutex.release();
+
 
     for (unsigned i = 0; i < nbToFree; i++) {
         waitBeforeCC.release();
@@ -96,6 +102,7 @@ void PcoCableCar::endService()
 
 void PcoCableCar::goUp()
 {
+    // Attends que tous les skieurs soient entrés pour monter
     cabinCanMove.acquire();
 
     qDebug() << "Le télécabine monte";
@@ -104,6 +111,7 @@ void PcoCableCar::goUp()
 
 void PcoCableCar::goDown()
 {
+    // Attends que tous les skieurs soient sortis pour redescendre
     cabinCanMove.acquire();
 
     qDebug() << "Le télécabine descend";
@@ -117,7 +125,13 @@ void PcoCableCar::loadSkiers()
 
     unsigned max = nbSkiersWaiting < capacity ? nbSkiersWaiting : capacity;
     nbSkiersWaiting -= max;
-    nbToWait = max;
+
+    // On définit dans cette fonction combien de skieurs vont entrer
+    // pendant cette période de chargement. Un skieur qui arrive entre le load
+    // et le moment où la cabine part ne pourra pas entrer car nous avons
+    // fait le nombre de release ici basé sur le nombre de skieurs actuel
+    // qui attendent
+    nbSkiersToLoad = max;
 
     mutex.release();
 
@@ -136,6 +150,7 @@ void PcoCableCar::unloadSkiers()
 
     mutex.release();
 
+    // Relache tous les skieurs
     for (unsigned i = 0; i < nbToRelease; i++) {
         waitInCC.release();
     }

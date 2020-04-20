@@ -123,7 +123,7 @@ protected:
 
     // A vous d'ajouter les attributs dont vous avez besoin
 
-    unsigned int nbToWait;
+    unsigned int nbSkiersToLoad;
 
     PcoSemaphore mutex;
     PcoSemaphore waitBeforeCC;
