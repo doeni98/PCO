@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Nom Prénom, Nom Prénom
+// Auteurs : Bourqui Denis, Müller Nicolas
 //
 #ifndef LOCOMOTIVEBEHAVIOR_H
 #define LOCOMOTIVEBEHAVIOR_H
@@ -23,7 +23,31 @@ public:
      * \param loco la locomotive dont on représente le comportement
      */
     LocomotiveBehavior(Locomotive& loco, std::shared_ptr<SharedSectionInterface> sharedSection /*, autres paramètres éventuels */) : loco(loco), sharedSection(sharedSection) {
-        // Eventuel code supplémentaire du constructeur
+
+        switch (loco.numero()) {
+
+        case 7:
+            accessContact = 23;
+            leaveContact = 5;
+            break;
+        case 42:
+            accessContact = 19;
+            leaveContact = 1;
+            break;
+        default:
+            // TODO
+            return;
+        }
+    }
+
+    int getAccesContact() {
+
+        return accessContact;
+    }
+
+    int getLeaveContact() {
+
+        return leaveContact;
     }
 
 protected:
@@ -57,6 +81,13 @@ protected:
      *
      * Par exemple la priorité ou le parcours
      */
+
+    int accessContact;
+    int leaveContact;
+    int startContact;
+
+    bool turningClockwise;
+
 };
 
 #endif // LOCOMOTIVEBEHAVIOR_H
