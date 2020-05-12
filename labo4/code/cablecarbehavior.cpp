@@ -10,6 +10,8 @@
 void CableCarBehavior::run()
 {
 
+    // Un test de service ici suffit, car il est demandé que
+    // la télécabine finisse sa routine une fois qu'elle a commencé
     while (cableCar->isInService()) {
 
         cableCar->loadSkiers();

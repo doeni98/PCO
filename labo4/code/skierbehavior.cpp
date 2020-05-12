@@ -22,7 +22,10 @@ void SkierBehavior::run()
         cableCar->waitForCableCar(id);
 
         // Si pendant l'attente, le télécabine ferme,
-        // le skieur doit rentrer
+        // le skieur doit pourvoir rentrer
+        // Ne doit pas être fait une fois par instruction
+        // car une fois qu'il est dans la cabine, il doit
+        // Encore skier jusque en bas
         if (cableCar->isInService()) {
 
             cableCar->goIn(id);
