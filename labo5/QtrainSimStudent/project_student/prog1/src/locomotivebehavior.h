@@ -22,17 +22,16 @@ public:
      * \brief locomotiveBehavior Constructeur de la classe
      * \param loco la locomotive dont on représente le comportement
      */
-    LocomotiveBehavior(Locomotive& loco, std::shared_ptr<SharedSectionInterface> sharedSection /*, autres paramètres éventuels */) : loco(loco), sharedSection(sharedSection) {
+    LocomotiveBehavior(Locomotive& loco, std::shared_ptr<SharedSectionInterface> sharedSection /*, autres paramètres éventuels */)
+        : loco(loco), sharedSection(sharedSection), turningClockwise(true) {
 
         switch (loco.numero()) {
 
         case 7:
-            accessContact = 23;
-            leaveContact = 5;
+            contacts = {24, 23, 16, 5, 34, 33, 25};
             break;
         case 42:
-            accessContact = 19;
-            leaveContact = 1;
+            contacts = {20, 19, 13, 1, 31, 30, 22};
             break;
         default:
             // TODO
@@ -40,14 +39,23 @@ public:
         }
     }
 
-    int getAccesContact() {
-
-        return accessContact;
+    int getAccessContact(){
+        return contacts[turningClockwise?1:4];
     }
 
-    int getLeaveContact() {
+    int getRequestContact(){
+        return contacts[turningClockwise?0:5];
+    }
 
-        return leaveContact;
+    int getLeaveContact(){
+        return contacts[turningClockwise?3:2];
+    }
+    int getStartingPointContact(){
+        return contacts[6];
+    }
+
+    void invertTurnDirection(){
+        turningClockwise = !turningClockwise;
     }
 
 protected:
@@ -82,11 +90,21 @@ protected:
      * Par exemple la priorité ou le parcours
      */
 
+
+
     int accessContact;
     int leaveContact;
     int startContact;
 
     bool turningClockwise;
+
+    /* Clockwise
+     * request[0], access[1], enter[2], leave[3]
+     * Anticlockwise
+     * request[5], access[4], enter[3], leave[2]
+     * starting point always [6]
+     * */
+    QVector<int> contacts;
 
 };
 

@@ -16,19 +16,17 @@ void LocomotiveBehavior::run()
     loco.demarrer();
     loco.afficherMessage("Ready!");
 
-    /* A vous de jouer ! */
-
-    // Vous pouvez appeler les méthodes de la section partagée comme ceci :
-    //sharedSection->request(loco);
-    //sharedSection->getAccess(loco);
-    //sharedSection->leave(loco);
-
     while(1) {
-
-        attendre_contact(getAccesContact());
+        attendre_contact(getAccessContact());
         sharedSection->getAccess(loco, SharedSectionInterface::Priority::LowPriority);
         attendre_contact(getLeaveContact());
         sharedSection->leave(loco);
+        attendre_contact(getStartingPointContact());
+        if(++loopCounter == 2){
+            loopCounter = 0;
+            inverser_sens_loco(loco.numero());
+            invertTurnDirection();
+        }
     }
 }
 
