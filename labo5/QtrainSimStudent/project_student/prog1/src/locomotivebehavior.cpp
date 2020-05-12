@@ -3,13 +3,14 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Nom Prénom, Nom Prénom
+// Auteurs : Bourqui Denis, Müller Nicolas
 //
 #include "locomotivebehavior.h"
 #include "ctrain_handler.h"
 
 void LocomotiveBehavior::run()
 {
+    int loopCounter = 0;
     //Initialisation de la locomotive
     loco.allumerPhares();
     loco.demarrer();
@@ -22,7 +23,13 @@ void LocomotiveBehavior::run()
     //sharedSection->getAccess(loco);
     //sharedSection->leave(loco);
 
-    while(1) {}
+    while(1) {
+
+        attendre_contact(getAccesContact());
+        sharedSection->getAccess(loco, SharedSectionInterface::Priority::LowPriority);
+        attendre_contact(getLeaveContact());
+        sharedSection->leave(loco);
+    }
 }
 
 void LocomotiveBehavior::printStartMessage()

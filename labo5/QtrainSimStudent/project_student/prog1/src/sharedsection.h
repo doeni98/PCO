@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Nom Prénom, Nom Prénom
+// Auteurs : Bourqui Denis, Müller Nicolas
 //
 #ifndef SHAREDSECTION_H
 #define SHAREDSECTION_H
@@ -28,8 +28,7 @@ public:
      * @brief SharedSection Constructeur de la classe qui représente la section partagée.
      * Initialisez vos éventuels attributs ici, sémaphores etc.
      */
-    SharedSection() {
-        // TODO
+    SharedSection() : isOccupied(false), isWaiting(false), mutex(1), waitingQueue(0) {
     }
 
     /**
@@ -39,7 +38,6 @@ public:
      * @param priority La priorité de la locomotive qui fait l'appel
      */
     void request(Locomotive& loco, Priority priority) override {
-        // TODO
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 requested the shared section.").arg(loco.numero())));
@@ -55,7 +53,28 @@ public:
      * @param priority La priorité de la locomotive qui fait l'appel
      */
     void getAccess(Locomotive &loco, Priority priority) override {
-        // TODO
+
+        mutex.acquire();
+
+        if (isOccupied) {
+
+            loco.arreter();
+            isWaiting = true;
+
+            mutex.release();
+
+            waitingQueue.acquire();
+
+            mutex.acquire();
+
+            isWaiting = false;
+            loco.demarrer();
+
+        }
+
+        adaptRailwayForLoco(loco);
+        isOccupied = true;
+        mutex.release();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 accesses the shared section.").arg(loco.numero())));
@@ -67,17 +86,43 @@ public:
      * @param loco La locomotive qui quitte la section partagée
      */
     void leave(Locomotive& loco) override {
-        // TODO
+
+        mutex.acquire();
+
+        isOccupied = false;
+
+        if (isWaiting) {
+            waitingQueue.release();
+        }
+
+        mutex.release();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
     }
 
-    /* A vous d'ajouter ce qu'il vous faut */
-
 private:
-    // Méthodes privées ...
-    // Attributes privés ...
+
+    void adaptRailwayForLoco(Locomotive &loco) {
+
+        switch (loco.numero()) {
+
+        case 7:
+            diriger_aiguillage(2, DEVIE, 0);
+            diriger_aiguillage(9, DEVIE, 0);
+            break;
+        case 42:
+            diriger_aiguillage(2, TOUT_DROIT, 0);
+            diriger_aiguillage(9, TOUT_DROIT, 0);
+            break;
+        default:
+            afficher_message("Unknown loco, unable to predict route");
+        }
+    }
+
+    bool isOccupied, isWaiting;
+
+    PcoSemaphore mutex, waitingQueue;
 };
 
 
