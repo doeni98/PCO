@@ -56,23 +56,40 @@ public:
 
         mutex.acquire();
 
+        // Teste si le chemin est libre
         if (isOccupied) {
 
+            // Arrête la loco si c'est occupé
             loco.arreter();
             isWaiting = true;
 
-            mutex.release();
+            // Bloque dans la file d'attente si besoin
+            while (isOccupied) {
 
-            waitingQueue.acquire();
+                mutex.release();
+                waitingQueue.acquire();
+                mutex.acquire();
 
-            mutex.acquire();
+            }
 
-            isWaiting = false;
+            // Évite de redémarrer la locomotive si la
+            // simulation a été coupée
+            staticMutex.acquire();
+            if (!isRunning) {
+
+                staticMutex.release();
+                mutex.release();
+                return;
+            }
+            staticMutex.release();
+
+            // Redémarre la loco si la simulation tourne
+            // toujours et informe que plus personne n'attends
             loco.demarrer();
-
+            isWaiting = false;
         }
 
-        adaptRailwayForLoco(loco);
+        // Informe que le chemin est occupé
         isOccupied = true;
         mutex.release();
 
@@ -89,8 +106,10 @@ public:
 
         mutex.acquire();
 
+        // Annonce que la section est libre
         isOccupied = false;
 
+        // Libère un train s'il y en a un qui attends
         if (isWaiting) {
             waitingQueue.release();
         }
@@ -101,29 +120,49 @@ public:
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
     }
 
-private:
+    static void stopSimulation() {
 
-    void adaptRailwayForLoco(Locomotive &loco) {
+        staticMutex.acquire();
 
-        switch (loco.numero()) {
+        // Arrêt définitif
+        isRunning = false;
 
-        case 7:
-            diriger_aiguillage(2, DEVIE, 0);
-            diriger_aiguillage(9, DEVIE, 0);
-            break;
-        case 42:
-            diriger_aiguillage(2, TOUT_DROIT, 0);
-            diriger_aiguillage(9, TOUT_DROIT, 0);
-            break;
-        default:
-            afficher_message("Unknown loco, unable to predict route");
-        }
+        // On le libère pas les trains en attente dans la file d'attente
+        // car dans le cadre de ce laboratoire, il a été décidé de ne pas joindre
+        // les threads à la fin de l'execution. Cette méhtode statique évite simplement
+        // qu'une locomotive puisse redémarrer après un arrêt d'urgence
+
+        staticMutex.release();
     }
 
+private:
+
+    /**
+     * @brief isRunning     Variable partagée qui définit si les sections partagées
+     *                      sont encore actives
+     */
+    static bool isRunning;
+
+    /**
+     * @brief staticMutex   Mutex pour proteger isRunning
+     */
+    static PcoSemaphore staticMutex;
+
+    /**
+     * @brief isOccupied    true si la section est occupée, false sinon
+     * @brief isWaiting     true si un train est dans la file d'attente, false sinon
+     */
     bool isOccupied, isWaiting;
 
+    /**
+     * @brief mutex         Protection des variables
+     * @brief waitingQueue  Sychronisation de la file d'attente
+     */
     PcoSemaphore mutex, waitingQueue;
 };
 
+// Init des vars statiques
+bool SharedSection::isRunning = true;
+PcoSemaphore SharedSection::staticMutex(1);
 
 #endif // SHAREDSECTION_H
