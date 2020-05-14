@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Nom Prénom, Nom Prénom
+// Auteurs : Bourqui Denis, Müller Nicolas
 //
 #ifndef SHAREDSECTION_H
 #define SHAREDSECTION_H
@@ -28,8 +28,7 @@ public:
      * @brief SharedSection Constructeur de la classe qui représente la section partagée.
      * Initialisez vos éventuels attributs ici, sémaphores etc.
      */
-    SharedSection() {
-        // TODO
+    SharedSection() : isOccupied(false), isWaiting(false), highPriorityRequest(false), mutex(1), waitingQueue(0) {
     }
 
     /**
@@ -39,7 +38,22 @@ public:
      * @param priority La priorité de la locomotive qui fait l'appel
      */
     void request(Locomotive& loco, Priority priority) override {
-        // TODO
+
+        switch(priority) {
+
+        case SharedSection::Priority::HighPriority:
+
+            mutex.acquire();
+            highPriorityRequest = true;
+            mutex.release();
+
+            break;
+
+        case SharedSection::Priority::LowPriority:
+        default:
+            /* DO NOTHING*/
+            break;
+        }
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 requested the shared section.").arg(loco.numero())));
@@ -55,7 +69,52 @@ public:
      * @param priority La priorité de la locomotive qui fait l'appel
      */
     void getAccess(Locomotive &loco, Priority priority) override {
-        // TODO
+
+        mutex.acquire();
+
+        // Teste si le chemin est libre ou si une demande avec une plus haute priotité existe
+        if (isOccupied || (highPriorityRequest && priority != Priority::HighPriority)) {
+
+            // Arrête la loco si c'est le cas
+            loco.arreter();
+            isWaiting = true;
+
+            // Bloque dans la file d'attente si besoin
+            while (isOccupied || (highPriorityRequest && priority != Priority::HighPriority)) {
+
+                mutex.release();
+                waitingQueue.acquire();
+                mutex.acquire();
+
+            }
+
+            // Évite de redémarrer la locomotive si la
+            // simulation a été coupée
+            staticMutex.acquire();
+            if (!isRunning) {
+
+                staticMutex.release();
+                mutex.release();
+                return;
+            }
+            staticMutex.release();
+
+            // Redémarre la loco si la simulation tourne
+            // toujours et informe que plus personne n'attends
+            loco.demarrer();
+            isWaiting = false;
+        }
+
+        // Informe que le chemin est occupé
+        isOccupied = true;
+        // Si la demande d'accès était de priorité haute,
+        // ce n'est plus le cas, on peut reset la variable.
+        // L'autre locomotive ne démarrera pas car le tronçon est occupé
+        if (highPriorityRequest) {
+            highPriorityRequest = false;
+        }
+        // Libère les ressources
+        mutex.release();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 accesses the shared section.").arg(loco.numero())));
@@ -67,18 +126,67 @@ public:
      * @param loco La locomotive qui quitte la section partagée
      */
     void leave(Locomotive& loco) override {
-        // TODO
+
+        mutex.acquire();
+
+        // Annonce que la section est libre
+        isOccupied = false;
+
+        // Libère un train s'il y en a un qui attends
+        if (isWaiting) {
+            waitingQueue.release();
+        }
+
+        mutex.release();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
     }
 
-    /* A vous d'ajouter ce qu'il vous faut */
+    static void stopSimulation() {
+
+        staticMutex.acquire();
+
+        // Arrêt définitif
+        isRunning = false;
+
+        // On le libère pas les trains en attente dans la file d'attente
+        // car dans le cadre de ce laboratoire, il a été décidé de ne pas joindre
+        // les threads à la fin de l'execution. Cette méhtode statique évite simplement
+        // qu'une locomotive puisse redémarrer après un arrêt d'urgence
+
+        staticMutex.release();
+    }
 
 private:
-    // Méthodes privées ...
-    // Attributes privés ...
+
+    /**
+     * @brief isRunning     Variable partagée qui définit si les sections partagées
+     *                      sont encore actives
+     */
+    static bool isRunning;
+
+    /**
+     * @brief staticMutex   Mutex pour proteger isRunning
+     */
+    static PcoSemaphore staticMutex;
+
+    /**
+     * @brief isOccupied            true si la section est occupée, false sinon
+     * @brief isWaiting             true si un train est dans la file d'attente, false sinon
+     * @brief highPriorityRequest   true si un train de haute priorité souhaite accéder au tronçon
+     */
+    bool isOccupied, isWaiting, highPriorityRequest;
+
+    /**
+     * @brief mutex         Protection des variables
+     * @brief waitingQueue  Sychronisation de la file d'attente
+     */
+    PcoSemaphore mutex, waitingQueue;
 };
 
+// Init des vars statiques
+bool SharedSection::isRunning = true;
+PcoSemaphore SharedSection::staticMutex(1);
 
 #endif // SHAREDSECTION_H

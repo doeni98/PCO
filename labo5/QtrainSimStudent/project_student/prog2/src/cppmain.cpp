@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Nom Prénom, Nom Prénom
+// Auteurs : Bourqui Denis, Müller Nicolas
 //
 #include "ctrain_handler.h"
 
@@ -19,16 +19,23 @@
 // Locomotive A
 static Locomotive locoA(7 /* Numéro (pour commande trains sur maquette réelle) */, 10 /* Vitesse */);
 // Locomotive B
-static Locomotive locoB(42 /* Numéro (pour commande trains sur maquette réelle) */, 12 /* Vitesse */);
+static Locomotive locoB(42 /* Numéro (pour commande trains sur maquette réelle) */, 14 /* Vitesse */);
 
 //Arret d'urgence
 void emergency_stop()
 {
-    // TODO
+    // Arrête le comportement des locomotives
+    LocomotiveBehavior::stopAllBehaviors();
+    // Arrête la gestion de la section critique
+    // Évite de relancer un train sans le vouloir
+    SharedSection::stopSimulation();
+
+    // Imobilise les trains
+    locoA.arreter();
+    locoB.arreter();
 
     afficher_message("\nSTOP!");
 }
-
 
 //Fonction principale
 int cmain()
@@ -49,7 +56,7 @@ int cmain()
     // Vous devrez utiliser cette fonction pour la section partagée pour aiguiller les locos
     // sur le bon parcours (par exemple à la sortie de la section partagée) vous pouvez l'
     // appeler depuis vos thread des locos par ex.
-    diriger_aiguillage(1,  TOUT_DROIT, 0);
+    diriger_aiguillage(1,  DEVIE     , 0);
     diriger_aiguillage(2,  DEVIE     , 0);
     diriger_aiguillage(3,  DEVIE     , 0);
     diriger_aiguillage(4,  TOUT_DROIT, 0);
@@ -58,7 +65,7 @@ int cmain()
     diriger_aiguillage(7,  TOUT_DROIT, 0);
     diriger_aiguillage(8,  DEVIE     , 0);
     diriger_aiguillage(9,  DEVIE     , 0);
-    diriger_aiguillage(10, TOUT_DROIT, 0);
+    diriger_aiguillage(10, DEVIE     , 0);
     diriger_aiguillage(11, TOUT_DROIT, 0);
     diriger_aiguillage(12, TOUT_DROIT, 0);
     diriger_aiguillage(13, TOUT_DROIT, 0);
@@ -102,9 +109,13 @@ int cmain()
     std::shared_ptr<SharedSectionInterface> sharedSection = std::make_shared<SharedSection>();
 
     // Création du thread pour la loco 0
-    std::unique_ptr<Launchable> locoBehaveA = std::make_unique<LocomotiveBehavior>(locoA, sharedSection /*, autres paramètres ...*/);
+    std::unique_ptr<Launchable> locoBehaveA = std::make_unique<LocomotiveBehavior>(locoA, sharedSection,
+                                                                                   LocomotiveBehavior::LocomotiveType::LocomotiveA,
+                                                                                   SharedSectionInterface::Priority::LowPriority);
     // Création du thread pour la loco 1
-    std::unique_ptr<Launchable> locoBehaveB = std::make_unique<LocomotiveBehavior>(locoB, sharedSection /*, autres paramètres ...*/);
+    std::unique_ptr<Launchable> locoBehaveB = std::make_unique<LocomotiveBehavior>(locoB, sharedSection,
+                                                                                   LocomotiveBehavior::LocomotiveType::LocomotiveB,
+                                                                                   SharedSectionInterface::Priority::HighPriority);
 
     // Lanchement des threads
     afficher_message(qPrintable(QString("Lancement thread loco A (numéro %1)").arg(locoA.numero())));

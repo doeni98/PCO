@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Nom Prénom, Nom Prénom
+// Auteurs : Bourqui Denis, Müller Nicolas
 //
 #ifndef LOCOMOTIVEBEHAVIOR_H
 #define LOCOMOTIVEBEHAVIOR_H
@@ -11,6 +11,7 @@
 #include "locomotive.h"
 #include "launchable.h"
 #include "sharedsectioninterface.h"
+#include "pcosynchro/pcosemaphore.h"
 
 /**
  * @brief La classe LocomotiveBehavior représente le comportement d'une locomotive
@@ -18,13 +19,75 @@
 class LocomotiveBehavior : public Launchable
 {
 public:
+
+    enum class LocomotiveType {
+        LocomotiveA,
+        LocomotiveB
+    };
     /*!
      * \brief locomotiveBehavior Constructeur de la classe
      * \param loco la locomotive dont on représente le comportement
      */
-    LocomotiveBehavior(Locomotive& loco, std::shared_ptr<SharedSectionInterface> sharedSection /*, autres paramètres éventuels */) : loco(loco), sharedSection(sharedSection) {
-        // Eventuel code supplémentaire du constructeur
+    LocomotiveBehavior(Locomotive& loco, std::shared_ptr<SharedSectionInterface> sharedSection , LocomotiveType type,
+                       SharedSectionInterface::Priority priority)
+        : loco(loco),
+          sharedSection(sharedSection),
+          turningClockwise(true),
+          type(type),
+          priority(priority) {
+
+        // Définit les contacts importants en fonction du type de la locomotive
+        switch (type) {
+
+        case LocomotiveType::LocomotiveA:
+            contacts = {24, 23, 16, 5, 34, 33, 25};
+            break;
+        case LocomotiveType::LocomotiveB:
+            contacts = {20, 19, 13, 1, 31, 30, 22};
+            break;
+        default:
+            // Ne fait rien
+            return;
+        }
     }
+
+    /**
+     * @brief getAccessContact  Récupère le contact qui doit déclancher l'accès
+     *                          à la section critique
+     */
+    int getAccessContact();
+
+    /**
+     * @brief getRequestContact  Récupère le contact qui doit déclancher la demande d'accès
+     *                           à la section critique
+     */
+    int getRequestContact();
+
+    /**
+     * @brief getLeaveContact   Récupère le contact qui doit déclancher la sortie
+     *                          de la section critique
+     */
+    int getLeaveContact();
+
+    /**
+     * @brief getStartingPointContact  Récupère le contact qui représente le point de départ
+     */
+    int getStartingPointContact();
+
+    /**
+     * @brief invertTurnDirection   Inverse le sens de rotation des tours de circuit
+     */
+    void invertTurnDirection();
+
+    /**
+     * @brief adaptRailwayForLoco   Adapte le tracé pour correspondre à la bonne locomotive
+     */
+    void adaptRailwayForLoco();
+
+    /**
+     * @brief stopAllBehaviors  Arrête la simulation côté comportement des locomotives
+     */
+    static void stopAllBehaviors();
 
 protected:
     /*!
@@ -52,11 +115,43 @@ protected:
      */
     std::shared_ptr<SharedSectionInterface> sharedSection;
 
-    /*
-     * Vous êtes libres d'ajouter des méthodes ou attributs
-     *
-     * Par exemple la priorité ou le parcours
+    /**
+     * @brief turningClockwise Contient le sens de rotation
      */
+    bool turningClockwise;
+
+    /**
+     * @brief type Contient quel est le type de locomotive
+     */
+    LocomotiveType type;
+
+    /**
+     * @brief priority Priorité fixe par locomotive. Définit la
+     *                 priorité d'accès aux sections partagées
+     */
+    SharedSectionInterface::Priority priority;
+
+    /**
+     * @brief isRunning Variable partagée qui définit si la simulation
+     *                  est toujours active
+     * @brief mutex     Protège cette variable
+     */
+    static bool isRunning;
+    static PcoSemaphore mutex;
+
+    /**
+     * @brief Contient les points de contacts importants
+     *        pour une locomotive. Voici la liste des
+     *        points en fonction du sens de rotation
+     *
+     * Clockwise
+     * request[0], access[1], enter[2], leave[3]
+     * Anticlockwise
+     * request[5], access[4], enter[3], leave[2]
+     * starting point always [6]
+     * */
+    QVector<int> contacts;
+
 };
 
 #endif // LOCOMOTIVEBEHAVIOR_H
