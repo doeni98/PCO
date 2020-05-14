@@ -106,8 +106,7 @@ void LocomotiveBehavior::invertTurnDirection() {
     // Inverse le sens de la locomotive
     inverser_sens_loco(loco.numero());
 
-    // Modifie le comportement de la loco
-    // dans le code aussi
+    // Modifie le comportement de la loco dans le code aussi
     turningClockwise = !turningClockwise;
 }
 
