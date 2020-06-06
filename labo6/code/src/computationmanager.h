@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Prénom Nom, Prénom Nom
+// Auteurs : Denis Bourqui, Nicolas Müller
 
 // La déclaration de la classe ComputationManager se trouve en bas du fichier,
 // ajoutez-y les attributs (et fonctions au besoin) pour votre implémentation.
@@ -17,7 +17,7 @@
 // Ajoutez les includes dont vous avez besoin ici
 
 #include <memory>
-
+#include <QList>
 #include "pcosynchro/pcohoaremonitor.h"
 
 /**
@@ -184,6 +184,14 @@ protected:
 
     // Ajoutez vos attributs et déclarations de méthodes ici
     // P.ex. variables conditions et structure de données pour le buffer
+   const static int DIFFERENT_COMPUTATION = 3;
+    QList<Request> requestQueue[DIFFERENT_COMPUTATION];
+    Condition newRequest[DIFFERENT_COMPUTATION], queueNotFull[DIFFERENT_COMPUTATION], newResult;
+
+    QList<Result> results;
+    QList<int> ignoredResultsId, stoppedId;
+
+    int nextResultId = 0;
 
     // Queues
     const size_t MAX_TOLERATED_QUEUE_SIZE;

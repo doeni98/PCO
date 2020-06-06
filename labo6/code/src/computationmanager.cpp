@@ -3,7 +3,7 @@
 //  / ___/ /__/ /_/ / / __// // / __// // / //
 // /_/   \___/\____/ /____/\___/____/\___/  //
 //                                          //
-// Auteurs : Prénom Nom, Prénom Nom
+// Auteurs : Denis Bourqui, Nicolas Müller
 
 
 // A vous de remplir les méthodes, vous pouvez ajouter des attributs ou méthodes pour vous aider
@@ -20,47 +20,97 @@ ComputationManager::ComputationManager(int maxQueueSize): MAX_TOLERATED_QUEUE_SI
 }
 
 int ComputationManager::requestComputation(Computation c) {
-    // TODO
-    return -1;
+    monitorIn();
+    int ctype = static_cast<std::underlying_type<ComputationType>::type>(c.computationType);
+    if(requestQueue[ctype].size() == (int) MAX_TOLERATED_QUEUE_SIZE)
+        wait(queueNotFull[ctype]);
+
+    int id = nextId++;
+    requestQueue[ctype].push_back(Request(c, id));
+    signal(newRequest[ctype]);
+    monitorOut();
+    return id;
 }
 
 void ComputationManager::abortComputation(int id) {
-    // TODO
+    monitorIn();
+    for (int i = 0; i < DIFFERENT_COMPUTATION ; i++) {
+        int requestCount = requestQueue[i].size();
+        for(int j = 0; j < requestCount; ++j){
+            if(requestQueue[i].at(j).getId() == id){
+                requestQueue[i].removeAt(j);
+                signal(queueNotFull[i]);
+                monitorOut();
+                return;
+            }
+        }
+    }
+
+    ignoredResultsId.push_back(id);
+    if(id == nextResultId)
+        signal(newResult);
+    stoppedId.push_back(id);
+    monitorOut();
 }
 
 Result ComputationManager::getNextResult() {
-    // TODO
-    // Replace all of the code below by your code
 
-    // Filled with some code in order to make the thread in the UI wait
     monitorIn();
-    auto c = Condition();
-    wait(c);
-    monitorOut();
+    do{ // on every new Result (and ones at the calling of this function)
 
-    return Result(-1, 0.0);
+        //remove next results that are ignored
+        while(ignoredResultsId.contains(nextResultId)){
+           // remove id from ignored list
+           ignoredResultsId.erase(std::find(ignoredResultsId.begin(), ignoredResultsId.end(), nextResultId));
+           // increment next result id
+           nextResultId++;
+        }
+
+        for(int i = 0; i < results.size(); ++i){ // foreach result in buffers result list
+
+            Result result = results.at(i);
+            if(result.getId() == nextResultId){ // if this is the next result to send then return this result
+                nextResultId++;
+                results.removeAt(i);
+                monitorOut();
+                return result;
+            }
+        }
+
+        wait(newResult);
+    }while (1);
 }
 
 Request ComputationManager::getWork(ComputationType computationType) {
-    // TODO
-    // Replace all of the code below by your code
 
-    // Filled with arbitrary code in order to make the callers wait
     monitorIn();
-    auto c = Condition();
-    wait(c);
-    monitorOut();
+    int ctype = static_cast<std::underlying_type<ComputationType>::type>(computationType);
+    if(requestQueue[ctype].size() == 0) // if there is no request of my type -> wait
+        wait(newRequest[ctype]);
 
-    return Request(Computation(computationType), -1);
+    Request r = requestQueue[ctype].front();
+    requestQueue[ctype].pop_front(); // remove request from queue
+    signal(queueNotFull[ctype]); // signal there is space for a new queue
+    monitorOut();
+    return r;
 }
 
 bool ComputationManager::continueWork(int id) {
-    // TODO
-    return false;
+    monitorIn();
+    if(stoppedId.contains(id)){
+        ignoredResultsId.erase(std::find(ignoredResultsId.begin(), ignoredResultsId.end(), id));
+        monitorOut();
+        return false;
+    }
+    monitorOut();
+    return true;
 }
 
 void ComputationManager::provideResult(Result result) {
-    // TODO
+    monitorIn();
+    results.push_back(result);
+    signal(newResult);
+    monitorOut();
 }
 
 void ComputationManager::stop() {
