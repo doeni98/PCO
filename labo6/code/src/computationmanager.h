@@ -184,13 +184,26 @@ protected:
 
     // Ajoutez vos attributs et déclarations de méthodes ici
     // P.ex. variables conditions et structure de données pour le buffer
-   const static int DIFFERENT_COMPUTATION = 3;
-    QList<Request> requestQueue[DIFFERENT_COMPUTATION];
-    Condition newRequest[DIFFERENT_COMPUTATION], queueNotFull[DIFFERENT_COMPUTATION], newResult;
 
+    /* Number of different computation types */
+    const static int DIFFERENT_COMPUTATION = 3;
+
+    /* One Request Queue per computation type */
+    QList<Request> requestQueue[DIFFERENT_COMPUTATION];
+
+
+    Condition newRequest[DIFFERENT_COMPUTATION], /* One cond. var. for each type of computation: New Request arrived  */
+              queueNotFull[DIFFERENT_COMPUTATION], /* One cond. var. for each type of computation: There is space in the Requestqueue */
+              newResult; /* New result arrived in the result buffer*/
+
+    /* Result buffer */
     QList<Result> results;
+
+    /* lists containing the Computations that are stopped.
+     * ignoredResultList is used by Result processing. StoppedId is used for continueWork function */
     QList<int> ignoredResultsId, stoppedId;
 
+    /* Next result to give to the client */
     int nextResultId = 0;
 
     // Queues
