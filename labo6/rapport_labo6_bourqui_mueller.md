@@ -10,7 +10,7 @@ Comme nous avons interprété la donnée il y a 3 queue dans le buffer. Une pour
 
 Voici une représentation graphique de notre `ComputationManager`. Les différents éléments serons expliqué dans les différents étapes.
 
-![image-20200610125925085](/home/deni/.config/Typora/typora-user-images/image-20200610125925085.png)
+![image-20200610125925085](/mnt/reds/home/reds/pco20_student/labo6/img/dia.png)
 
 ## Etape 1
 
