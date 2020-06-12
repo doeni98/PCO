@@ -16,19 +16,34 @@
 
 ComputationManager::ComputationManager(int maxQueueSize): MAX_TOLERATED_QUEUE_SIZE(maxQueueSize)
 {
-    // TODO
+    for(int i = 0; i < DIFFERENT_COMPUTATION; ++i){
+        nbWaitingOnNewRequest[i] = 0;
+        nbWaitingClientForAddingRequest[i] = 0;
+    }
 }
 
 int ComputationManager::requestComputation(Computation c) {
 
     monitorIn();
 
+    if(stopped){
+        monitorOut();
+        throwStopException();
+    }
+
     /* get the ordinal of computationType. A : 0, B : 1, C : 2 */
     int ctype = static_cast<std::underlying_type<ComputationType>::type>(c.computationType);
 
     /* wait until there's space in request queue of this computationType*/
-    if(requestQueue[ctype].size() == (int) MAX_TOLERATED_QUEUE_SIZE)
+    if(requestQueue[ctype].size() == (int) MAX_TOLERATED_QUEUE_SIZE){
+        nbWaitingClientForAddingRequest[ctype]++;
         wait(queueNotFull[ctype]);
+    }
+
+    if(stopped){
+        monitorOut();
+        throwStopException();
+    }
 
     /* Add computation to Requests queue of corresponding computationType */
     int id = nextId++;
@@ -93,6 +108,10 @@ Result ComputationManager::getNextResult() {
 
     /* Repeat on every new result that arrives (and ones at the calling of this function)*/
     do{
+        if(stopped){
+            monitorOut();
+            throwStopException();
+        }
 
         /* if the nextResultId is in the ignored list, then skip this id and remove it from the ignored list.*/
         while(ignoredResultsId.contains(nextResultId)){
@@ -132,12 +151,24 @@ Request ComputationManager::getWork(ComputationType computationType) {
 
     monitorIn();
 
+    if(stopped){
+        monitorOut();
+        throwStopException();
+    }
+
     /* get the ordinal of computationType. A : 0, B : 1, C : 2 */
     int ctype = static_cast<std::underlying_type<ComputationType>::type>(computationType);
 
     /* if there is no request of my type -> wait */
-    if(requestQueue[ctype].size() == 0)
+    if(requestQueue[ctype].size() == 0){
+        nbWaitingOnNewRequest[ctype]++;
         wait(newRequest[ctype]);
+    }
+
+    if(stopped){
+        monitorOut();
+        throwStopException();
+    }
 
     /* Remove request from RequestQueue */
     Request r = requestQueue[ctype].front();
@@ -157,11 +188,17 @@ bool ComputationManager::continueWork(int id) {
 
     monitorIn();
 
+    if(stopped){
+        monitorOut();
+        return false;
+    }
+
     /* if this id is in the aborted list*/
     if(stoppedId.contains(id)){
 
         /* remove the id from the aborted list */
-        ignoredResultsId.erase(std::find(ignoredResultsId.begin(), ignoredResultsId.end(), id));
+        auto it = std::find(stoppedId.begin(), stoppedId.end(), id);
+        stoppedId.erase(it);
 
         monitorOut();
 
@@ -189,5 +226,22 @@ void ComputationManager::provideResult(Result result) {
 }
 
 void ComputationManager::stop() {
-    // TODO
+
+    monitorIn();
+
+   // set stop flag of class
+   stopped = true;
+   // awake the result getter thread
+   signal(newResult);
+
+   //awake client threads and worker threads that are waiting for space in queue and computation arriving in queue
+   for(int i = 0; i < DIFFERENT_COMPUTATION; ++i){
+       for(int j = 0; j < nbWaitingClientForAddingRequest[i]; ++j)
+           signal(queueNotFull[i]);
+       for(int j = 0; j < nbWaitingOnNewRequest[i]; j++)
+           signal(newRequest[i]);
+   }
+
+
+   monitorOut();
 }

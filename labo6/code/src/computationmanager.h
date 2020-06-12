@@ -196,6 +196,8 @@ protected:
               queueNotFull[DIFFERENT_COMPUTATION], /* One cond. var. for each type of computation: There is space in the Requestqueue */
               newResult; /* New result arrived in the result buffer*/
 
+    int nbWaitingClientForAddingRequest[3], nbWaitingOnNewRequest[3];
+
     /* Result buffer */
     QList<Result> results;
 

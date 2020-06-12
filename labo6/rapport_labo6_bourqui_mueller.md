@@ -34,6 +34,16 @@ Si/quand la queue n'est pas vide ils sortent la première requêtes de la queue.
 
 Finalement ils signalent `queueNotFull`du type concernée pour laisser arriver de nouvelle requêtes dans la queue.  
 
+### Tests
+
+| Test                                                         | Resultat attendu                         | Resultat |
+| ------------------------------------------------------------ | ---------------------------------------- | -------- |
+| computation de différent types pris par le bon worker        | chaque worker reçoit son type de calcule | ok       |
+| 12 calcules d'un type donnée, avec 1 seul worker             | le 12 sera pas mise en queue             | ok       |
+| Un calcule en attende d’entrer dans la queue sera mise dans queue dès qu'il y a de la place | Calcule en attende est ajouté à la queue | ok       |
+
+
+
 ## Etape 2
 
 Cette étape gère les résultats.
@@ -53,6 +63,14 @@ Elle fait ces deux tâches une fois qu'elle à été appelé. Si le résultat de
 
 Cette fonction ajoute juste le résultat dans la liste des résultat. Même si cette tâche est sensé été stopper au prélavant. Ça sera la fonction getNextResult qui va la liquider de la liste des résultat.
 
+### Tests
+
+| Test                                                         | Resultat attendu           | Resultat |
+| ------------------------------------------------------------ | -------------------------- | -------- |
+| Un résultat attend d’être retourner si c'est pas lui le prochain ID. | Résultat arrivent en ordre | ok       |
+
+
+
 ## Etape 3
 
 Cette étape gère les arrêts des calcules.
@@ -70,3 +88,33 @@ Si il s'agit de l'`id` qui est attendu comme prochain résultat, on signal `newR
 ### Fonction `bool continueWork(int id);`
 
 Cette fonction regarde si son `id` est dans la liste des `stoppedId`.  Si oui, il la supprime de la liste et retourne `false`, ce qui fait stopper le calcule. Sinon elle retourne `true` pour continuer le calcule. 
+
+### Tests
+
+| Test                                     | Resultat attendu                              | Resultat |
+| ---------------------------------------- | --------------------------------------------- | -------- |
+| un worker s’arrête si on le stoppe       | worker s’arrête, résultat n'est pas récupérer | ok       |
+| Arrêter un calcule qui est dans la queue | le calcule sort de la queue                   | ok       |
+
+
+
+## Etape 4
+
+Cette étape géré l’arrêt de tout les threads.
+
+### Fonction ` void stop()`
+
+Cette fonction met le flag `stop` de la classe a true. Avec ca plus aucun nouvau wait sera fait dans toutes les fonctions.
+
+Pour relâcher les threads qui sont actuellement sur un wait, il signale sur toutes les variables de conditions. 
+
+### Modification des fonctions
+
+Toutes les fonctions contiennent maintenant un check si le flag `stop` est actif. Si cela est activ ils sortent du moniteur et ils lèvent une exception. Ce check est fait avant et après tous les wait.
+
+| Test                                                         | Resultat attendu | Resultat |
+| ------------------------------------------------------------ | ---------------- | -------- |
+| plus aucun nouveau "segment" se dessine sur le gui après un arrêt | ok               | ok       |
+| plus aucun calcule dans la queue est pris                    | ok               | ok       |
+| Plus aucun résultat s'affiche                                | ok               | ok       |
+| Si un worker est en cours de son dernier segment, le résultat ne s'affiche non plus. | ok               | ok       |
